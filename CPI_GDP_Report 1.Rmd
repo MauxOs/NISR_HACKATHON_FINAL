@@ -1,0 +1,368 @@
+---
+title: "CPI and GDP Interactive Report"
+author: "Maurice Hirwa Uwimana and Jeanforbin Mugabo"
+date: "`r Sys.Date()`"
+output: html_document
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+
+library(shiny)
+library(shinydashboard)
+library(plotly)
+library(readxl)
+
+
+# Import your dataset (replace 'YourDataset.csv' with your actual file name)
+
+CPI <- read_excel("CPI & GDP Data.xlsx", 
+                  sheet = "All Rwanda")
+
+GDP <- read_excel("CPI & GDP Data.xlsx", 
+                  sheet = "Contribution")
+
+GDP_growth_rate <- read_excel("CPI & GDP Data.xlsx", 
+                  sheet = "Growth rate")
+
+
+urban_CPI <- read_excel("CPI & GDP Data.xlsx", 
+                        sheet = "Urban")
+
+rural_CPI <- read_excel("CPI & GDP Data.xlsx", 
+                        sheet = "Rural")
+
+others_CPI <- read_excel("CPI & GDP Data.xlsx", 
+                         sheet = "Other")
+
+CPI_CHANGE_ANNUAL <- read_excel("CPI & GDP Data.xlsx", 
+                        sheet = "Annual")
+
+CPI_CHANGE_MONTHLY <- read_excel("CPI & GDP Data.xlsx", 
+                                sheet = "Monthly")
+
+Expendicture_on_GDP <-read_excel("CPI & GDP Data.xlsx",  
+                                    sheet = "Expenditure")
+  
+  GDP_2022 <- read_excel("CPI & GDP Data.xlsx",
+                         sheet = "GDP2022")
+  
+  GDP_expenditure_growth <-read_excel("CPI & GDP Data.xlsx",
+                                       sheet = "GDP Growth rate")
+```
+
+# **This is CPI and GDP interactive report which utilizes data published by National Institute of Statistics of Rwanda NISR on their website.**
+Source: https://www.statistics.gov.rw/publication/1914 and https://www.statistics.gov.rw/publication/1873.
+
+**You can also access the interactive dashboard through: https://mauxos.shinyapps.io/CPI_GDP_Dashboard/ and ** 
+
+We will go through each and every crucial aspect of the report and of course we will only focus on among significant indicators in order to get an insight about percentage contribution of each sector to overall GDP, growth rate, inflation status and inflation variation over years, also, we will get glimpse about percentage contribution of different categories of consumption to general index (CPI).
+
+# Trend of General index (CPI) and Its Main Categories.
+
+This line chart shows how general index and its main categories including Transport, Health, Communication, etc just to mention few had evolved  over time since February 2009 up to November 2022.
+
+For easy navigation, you may use drop down menu below to access each category independently.
+
+```{r variable, echo=FALSE}
+inputPanel(
+  selectInput("variable", "Select Category:",
+                    choices = c("GENERAL INDEX (CPI)", "Food and non-alcoholic beverages", "Alcoholic beverages and tobacco",
+                                "Clothing and footwear","Housing, water, electricity, gas and other fuels","Furnishing, household equipment and routine household maintenance",
+                                "Health","Transport","Communication","Recreation and culture","Education","Restaurants and hotels",
+                                "Miscellaneous goods and services"),
+                    selected = "GENERAL INDEX (CPI)")
+)
+```
+
+```{r print_variable, echo=FALSE}
+br()
+renderPlotly({
+    # Create line chart based on selected variable
+    
+    
+    Trend <- plot_ly(CPI, x = ~Date, y = ~get(input$variable), type = 'scatter', mode = 'lines', fill='tozeroy', 
+                     color = I("blue"),
+                     name = input$variable) %>%
+      layout(title =paste("Trend of",input$variable,paste("in Rwanda")),
+             xaxis = list(title = "Time"),
+             yaxis = list(title = paste("Values of",input$variable)))
+    
+  })
+```
+
+# Interactive Pie Charts
+
+These are pie charts presenting percentage weights of main categories to general index CPI in Rural and Urban areas plus Other Selected Urban indices.
+
+Hover over each sector to interactively explore its contribution, providing a nuanced understanding of the economic landscape.
+These pie charts offer insights into how each sector’s contribution influences inflation, painting a comprehensive picture of economic dynamics.
+                  
+```{r, echo=FALSE}
+br()
+br()
+renderPlotly({
+    
+    Urban_plot <- plot_ly(urban_CPI, labels = urban_CPI$ITEM, values = urban_CPI$Weights, type = "pie", textinfo = "percent", 
+                          insidetextfont = list(color = "white"), 
+                          
+                          marker = list(line = list(color = "white", width = 6))) %>%
+      layout(title = "Percentage Weight of Each Category To CPI In Urban Area")
+    
+    
+    Urban_plot
+    
+  })
+```
+
+```{r, echo=FALSE}
+br()
+renderPlotly({
+    
+    rural_plot <- plot_ly(rural_CPI, labels = rural_CPI$ITEM, values = rural_CPI$Weights, type = "pie", textinfo = "percent", 
+                          insidetextfont = list(color = "white"), 
+                          
+                          marker = list(line = list(color = "white", width = 6))) %>%
+      
+      layout(title = "Percentage Weight of Each Category To CPI In Rural Area")
+    
+    
+    rural_plot
+    
+  }) 
+  
+```
+
+```{r, echo=FALSE}
+br()
+ renderPlotly({
+    
+    other_plot <- plot_ly(others_CPI, labels = others_CPI$ITEM, values = others_CPI$Weights, type = "pie", textinfo = "percent", 
+                          insidetextfont = list(color = "white"), 
+                          
+                          marker = list(line = list(color = "white", width = 6))) %>%
+      layout(title = "Percentage Weight of Each Category To CPI In Other Selected Urban Indices")
+    
+    
+    other_plot
+    
+  }) 
+```
+
+**Brief Overview, **
+
+Explore the urban CPI landscape, where “Food and non-alcoholic beverages”, “Housing, water, electricity, gas, and other fuels”, and “Transport” play pivotal roles in shaping economic trends.
+
+**In rural areas,** the CPI is shaped by the significant contributions of “Food and non-alcoholic beverages”, “Vegetables”, and “Housing, water, electricity, gas, and other fuels”.
+
+Notice the noteworthy impact of “Food and non-alcoholic beverages”, “Housing, water, electricity, gas, and other fuels”, and “Vegetables” on the CPI in both rural and urban settings.
+
+**Other selected urban indices,** the CPI is shaped by the significant contributions of “General index excluding fresh products and energy”, “Local goods index”, and “Food and non-alcoholic beverages”.
+
+# Inflation rate in Urban and Rural Areas
+
+This is percentage change on the same period 12 months earlier (November 2021 - November 2022).
+
+Note, Urban CPI was the focus of this publication as it was the headline index for monetary policy purposes.
+
+```{r, echo=FALSE}
+br()
+renderPlotly({
+      plot_ly(CPI_CHANGE_ANNUAL,x = ~CPI_CHANGE_ANNUAL$Date) %>%
+        add_lines(y = ~CPI_CHANGE_ANNUAL$`Urban CPI Annual Change`, name = "Urban CPI Annual Change", line = list(color = "blue")) %>%
+        add_lines( y = ~CPI_CHANGE_ANNUAL$`Rural CPI Annual Change`, name = "Rural CPI Annual Change", line = list(color = "red", dash = "dash")) %>%
+        add_lines( y = ~CPI_CHANGE_ANNUAL$`Rwanda CPI Annual Change`, name = "Rwanda CPI Annual Change", line = list(color = "green")) %>% 
+        layout(title = "Annual variation of CPI",
+               xaxis = list(title = "Date"),
+               yaxis = list(title = "CPI Value in %"))
+      
+    })
+br()
+  
+```
+
+```{r, echo=FALSE}
+br()
+renderPlotly({
+      plot_ly(CPI_CHANGE_MONTHLY,x = ~CPI_CHANGE_MONTHLY$Date) %>%
+        add_lines(y = ~CPI_CHANGE_MONTHLY$`Urban CPI Monthly Change`, name = "Urban CPI Monthly Change", line = list(color = "blue")) %>%
+        add_lines( y = ~CPI_CHANGE_MONTHLY$`Rural CPI Monthly Change`, name = "Rural CPI Monthly Change", line = list(color = "red", dash = "dash")) %>%
+        add_lines( y = ~CPI_CHANGE_MONTHLY$`Rwanda CPI Monthly Change`, name = "Rwanda CPI Monthly Change", line = list(color = "green")) %>% 
+        layout(title = "Monthly variation of CPI",
+               xaxis = list(title = "Date"),
+               yaxis = list(title = "CPI Value in %"))
+      
+    })
+br()
+```
+
+**Urban General Index (CPI),**
+Urban CPI increased by **21.7 percent** on annual basis (November 2021 and November 2022) and increased by **0.8 percent** on monthly basis (October 2022 to November 2022). The annual average inflation rate between November 2021 and November 2022 was **12.3 percent**.
+
+**Rural General Index (CPI),**
+Rural CPI increased by **42.9 percent** on annual basis and increased by **1.5 percent** on monthly basis.
+
+**Overall Rwanda General Index (CPI),**
+Rwanda CPI increased by **33.8 percent** on annual basis and increased by **1.3 percent** on monthly basis.
+
+```{r}
+
+br()
+br()
+
+```
+
+
+**These are percentage Contribution of Each Industry to 2022 GDP, Estimated at Frw 13,716 billions.** 
+
+```{r}
+br()
+```
+
+
+```{r box1, echo=FALSE}
+br()
+valueBox(value =GDP$INDUSTRY, subtitle = "Contribution of Industries")
+br()
+```
+
+```{r box2, echo=FALSE}
+valueBox(value =GDP$`AGRICULTURE, FORESTRY & FISHING`, subtitle = "Contribution of Agriculture, Forestry & Fishing")
+br()
+```
+
+```{r box3, echo=FALSE}
+valueBox(value =GDP$SERVICES, subtitle = "Contribution of Services")
+br()
+```
+
+```{r box4, echo=FALSE}
+valueBox(value =GDP$`TAXES LESS SUBSIDIES ON PRODUCTS`,subtitle = "Contribution of Taxes Less Subsidies on Product")
+br()
+br()
+```
+
+```{r , echo=FALSE}
+
+br()
+br()
+br()
+br()
+br()
+br()
+br()
+br()
+```
+
+# Variation of Percentage GDP growth From 2017- 2022.
+
+This bar chart shows an interesting insights on how three main sectors of GDP have contributed to overall GDP since 2017 up to 2022.
+
+You may utilize drop down menu to select each sector and see how it evolved over time.
+
+```{r barvariable, echo=FALSE}
+br()
+selectInput("barvariable", "Select a variable:",
+                    choices = c("GROSS DOMESTIC PRODUCT (GDP)","AGRICULTURE, FORESTRY & FISHING","INDUSTRY","SERVICES","TAXES LESS SUBSIDIES ON PRODUCTS"),
+                    selected = "GROSS DOMESTIC PRODUCT (GDP)")
+```
+
+```{r print_barvariable, echo=FALSE}
+br()
+renderPlotly({
+    # Create line chart based on selected variable
+    
+    
+    fig <- plot_ly(GDP_growth_rate, x = ~Date, y = ~get(input$barvariable), type = 'bar', 
+                   color = I("maroon"),
+                   height = 550,
+                   width = 670,
+                   name = input$barvariable) %>%
+      layout(title =paste("Growth rate of",input$barvariable,paste("in Rwanda")),
+             xaxis = list(title = "Time"),
+             yaxis = list(title = paste("% Contribution of ",input$barvariable)))
+  })
+br()
+
+```
+
+```{r , echo=FALSE}
+
+br()
+br()
+br()
+br()
+br()
+br()
+br()
+```
+
+**Gross Domestic Product and its Main Sectors**
+
+In 2022, GDP at current market prices was estimated at Frw 13,716 billion, up from Frw 10.930 billion in 2021. Services sector contributed 47 percent of GDP, Agriculture sector contributed 25 percent of the GDP, and Industry sector contributed 21 percent of GDP while 7 percent was attributed to adjustment for taxes less subsidies on products.
+
+```{r , echo=FALSE}
+br()
+br()
+```
+
+**Growth rate by kind of activity**
+
+In 2022, the economy continued to grow throughout the year. GDP growth was 7.9 percent in the first quarter, 7.5 percent in the second quarter, 10 percent in the third quarter and 7.3 percent in the fourth quarter. This led the year 2022 to grow by 8.2 percent when compared to 2021.
+
+In agriculture, the growth was 2 percent and contributed 0.4 percentage points to the overall growth.
+
+In industry, the growth was 5 percent and contributed 0.9 percentage points to the overall growth.
+
+In Services, the overall growth in service sector was 12 percent and contributed 5.7 percentage points to overall growth.
+
+# Expenditure GDP
+
+These charts will give an insight on how each sector increased and decreased its rate.
+
+You will also get an insight on growth rate.
+
+```{r, echo=FALSE}
+renderPlotly({
+    
+    plot_ly(Expendicture_on_GDP,x = ~Expendicture_on_GDP$Date) %>%
+      add_bars(y = ~Expendicture_on_GDP$`Total final consumption expenditure`, name = "Total final consumption expenditure") %>%
+      add_bars( y = ~Expendicture_on_GDP$`Gross capital formation`, name = "Gross capital formation") %>%
+      add_bars( y = ~Expendicture_on_GDP$`Resource balance`, name = "Resource balance") %>% 
+      add_bars( y = ~Expendicture_on_GDP$`Exports of goods & services`, name = "Exports of goods & services") %>%
+      add_bars( y = ~Expendicture_on_GDP$`Imports of goods & services`, name = "Imports of goods & services") %>%
+      layout(title = "Trend of  expendicture on GDP at current prices",
+             xaxis = list(title = "Date"),
+             yaxis = list(title = "Billions (RWF)",tickformat = "billions"))
+  })
+```
+
+**Expenditure GDP Describution**
+
+In 2022, private final consumption expenditure was 74 percent (Frw 10,133 billions) of GDP while government final consumption expenditure was 17 percent (Frw 2,338 billion) which sum up to 91% of overall GDP at current price. 
+Gross capital formation was estimated at 24 percent (Frw 3,359 billions) of GDP.
+
+**Notes**
+
+This trend of growth rate graph, shows an insight in how the GDP has evolved over time. In 2020, growth rate significantly dropped from 12.1% in 2019 to 3.1% due to COVID19 pandemic. After COVID19, growth rate resumed an uptrend where in 2022 growth rate reaches 25.5%.
+
+```{r, echo=FALSE}
+renderPlotly({
+    plot_ly(labels = GDP_2022$Valiable,values = GDP_2022$Value,hole=0.3,type="pie" ) %>% 
+      layout(
+        annotations= list(
+          x=0.5,
+          y=0.5,
+          text= "13,716 Billions",showarrow=FALSE
+        )
+      )
+    
+  })
+```
+
+The rate of change in prices were low since 2010 until 2016, and in 2017 the rate skyrocketted by 3.1%, and in 2018 rate dropped by 8.7%. In 2022, rate skyrocketted by 13.3% due to Russian - Ukrain war started in February 2022.
+
+# About
+
+We also included about section in the dashboard which can help you to navigate through the dashboard.
